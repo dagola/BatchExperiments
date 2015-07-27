@@ -123,8 +123,7 @@ reduceResultsExperiments = function(reg, ids, part = NA_character_, fun, ...,
   # NB: in the for-loop above we potentially changed that order if we used imputing,
   # see lines after id.chunk.done = ...
   if (nrow(aggr) > 0L) {
-    rownames(aggr) <- make.names(aggr$id, unique = TRUE)
-    #aggr = setRowNames(aggr, aggr$id)
+    aggr = setRowNames(aggr, aggr$id)
     aggr = aggr[as.character(ids), ]
   }
   aggr = addClasses(aggr, "ReducedResultsExperiments")
