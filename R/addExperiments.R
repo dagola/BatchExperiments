@@ -156,6 +156,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   BatchJobs:::syncRegistry(reg)
 
   # check prob.designs
+  message("checking prob.designs...")
   if (missing(prob.designs)) {
     prob.designs = lapply(dbGetAllProblemIds(reg), makeDesign)
   } else {
@@ -176,6 +177,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   }
 
   # check algo.designs
+  message("checking algo.designs...")
   if (missing(algo.designs)) {
     algo.designs = lapply(dbGetAllAlgorithmIds(reg), makeDesign)
   } else {
@@ -228,15 +230,18 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   on.exit(dbDisconnect(con))
 
   # create temporary table for job definitions
+  message("creating temporary table for job definitions...")
   mq(c("CREATE TEMP TABLE tmp(job_def_id INTEGER, prob_id TEXT,",
        "prob_pars TEXT, algo_id TEXT, algo_pars TEXT)"), con = con)
 
   # write auxiliary temporary table with replication numbers
+  message("writing auxiliary temporary table with replication numbers...")
   mq("CREATE TEMP TABLE repls(repl INTEGER)", con = con)
   mq("INSERT INTO repls(repl) VALUES(?)",
      con = con, bind.data = data.frame(repl = seq_len(repls)))
 
   # create temporary view on cross product of repls and job_def_id
+  message("creating temporary view on cross product of repls and job_def_id...")
   mq(c("CREATE TEMP VIEW cp AS SELECT repls.repl, tmp.job_def_id FROM tmp",
        "CROSS JOIN repls"), con = con)
 
@@ -244,6 +249,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
 
   # iterate to generate job definitions
   # write to temporary table every x definitions
+  message("iterating to generate job definitions...")
   job.defs = BatchJobs:::buffer("list", 5000L, writeJobDefs)
   for (pd in prob.designs) {
     pd$designIter$reset()
@@ -261,19 +267,23 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   }
 
   # add (remaining) defs to temporary job_defs table
+  message("adding (remaining) defs to temporary job_defs table...")
   job.defs$clear()
   rm(job.defs)
 
   # query job_id to keep track of new ids
+  message("query job_id to keep track of new ids...")
   max.job.id = mq("SELECT COALESCE(MAX(job_id), 0) AS x FROM %s_job_status", reg$id, con = con)$x
 
   # match for known job_def_id
+  message("match for known job_def_id...")
   mq(c("UPDATE tmp SET job_def_id = (SELECT job_def_id FROM %s_job_def AS jd",
        "WHERE jd.prob_id = tmp.prob_id AND jd.algo_id = tmp.algo_id AND",
        "jd.prob_pars = tmp.prob_pars AND jd.algo_pars = tmp.algo_pars)"),
      reg$id, con = con)
 
   # test whether we would overwrite existing experiments
+  message("testing whether would overwrite existing experiments...")
   if(!skip.defined) {
     if (mq("SELECT COUNT(job_def_id) AS n FROM tmp", con = con)$n > 0L)
       stop(paste("You have added identical experiments.",
@@ -284,6 +294,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   }
 
   # we start the transaction here, everything above is temporary
+  message("start transaction...")
   dbBegin(con)
   ok = try({
     # insert new job defs
