@@ -298,17 +298,20 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   dbBegin(con)
   ok = try({
     # insert new job defs
+  message("  insert new job defs...")
     mq(c("INSERT INTO %s_job_def(prob_id, prob_pars, algo_id, algo_pars)",
          "SELECT prob_id, prob_pars, algo_id, algo_pars FROM tmp",
          "WHERE job_def_id IS NULL"), reg$id, con = con)
 
     # update temporary table with new job defs
+  message("  update temporary table with new job defs...")
     mq(c("UPDATE tmp SET job_def_id = (SELECT job_def_id FROM %s_job_def AS jd WHERE",
          "jd.prob_id = tmp.prob_id AND jd.algo_id = tmp.algo_id AND",
          "jd.prob_pars = tmp.prob_pars AND jd.algo_pars = tmp.algo_pars)",
          "WHERE tmp.job_def_id IS NULL"), reg$id, con = con)
 
     # insert into job status table
+  message("  insert into job status table...")
     mq(c("INSERT INTO %1$s_job_status(job_def_id, repl)",
          "SELECT cp.job_def_id, cp.repl FROM cp WHERE NOT EXISTS",
          "(SELECT * FROM %1$s_job_status AS js WHERE",
@@ -318,6 +321,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
 
     # We could do this w/o bulk insert, but we are not allowed to
     # use external RNGs
+  message("  checking problem seeds...")
     df = mq("SELECT job_id, pseed, repl FROM %s_expanded_jobs WHERE job_id > %i",
             reg$id, max.job.id, con = con)
 
