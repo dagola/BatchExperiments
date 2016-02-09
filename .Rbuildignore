@@ -10,3 +10,5 @@ BatchExperiments_*.tar.gz
 ^man-roxygen
 ^.editorconfig$
 ^appveyor\.yml$
+^.*\.Rproj$
+^\.Rproj\.user$
