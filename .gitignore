@@ -1,3 +1,5 @@
 tests/testthat/unittests-files
 BatchExperiments.Rcheck
 BatchExperiments*.tar.gz
+.Rproj.user/*
+*.Rproj
