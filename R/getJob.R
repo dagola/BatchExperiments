@@ -16,4 +16,7 @@ getJobs.ExperimentRegistry = function(reg, ids, check.ids = TRUE) {
   if (!missing(ids) && check.ids)
     ids = checkIds(reg, ids)
   dbGetJobs(reg, ids)
+  jobs <- dbGetJobs(reg, ids)
+  names(jobs) <- sapply(jobs, function(x) x$id)
+  jobs
 }
